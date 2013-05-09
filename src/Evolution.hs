@@ -2,7 +2,7 @@ module Evolution where
 
 import Control.Applicative ((<$), (<|>))
 import Data.Functor ((<$>))
-import Data.Map as Map (Map, fromList, insert, lookup)
+import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Data.Maybe (fromMaybe)
 
 data World = World
@@ -51,13 +51,8 @@ initWorld :: Int -> Int -> World
 initWorld x y =
   World { width = x
         , height = y
-        , plants = fromList [((0, 1), Plant)
-                            ,((0, 2), Plant)
-                            ]
-        , creatures = [Creature 0 1 Gene Direction
-                      ,Creature 0 2 Gene Direction
-                      ,Creature 0 3 Gene Direction
-                      ]
+        , plants = empty
+        , creatures = []
         }
 
 step :: World -> World
