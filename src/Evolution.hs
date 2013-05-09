@@ -1,9 +1,11 @@
 module Evolution where
 
 import Control.Applicative ((<$), (<|>))
+import Control.Monad.State (State, state, runState)
 import Data.Functor ((<$>))
 import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Data.Maybe (fromMaybe)
+import System.Random (Random, RandomGen, StdGen, mkStdGen, randomR)
 
 data World = World
              { width :: Int
@@ -22,7 +24,6 @@ data Creature = Creature
 data Direction = Direction
 data Gene = Gene
 data Plant = Plant
-
 
 -- | stringify the world
 --
@@ -54,6 +55,22 @@ initWorld x y =
         , plants = empty
         , creatures = []
         }
+
+randomRSt :: (RandomGen g, Random a) => (a, a) -> State g a
+randomRSt range = state $ randomR range
+
+-- | create plants
+--
+-- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
+-- >>> let expected = unlines ["   ","   ","  *"]
+-- >>> let actual = showWorld $ fst x
+-- >>> expected == actual
+-- True
+addPlants :: World -> State StdGen World
+addPlants world = do
+  x <- randomRSt (0, width world - 1)
+  y <- randomRSt (0, height world - 1)
+  return $ world { plants = Map.insert (x, y) Plant $ plants world }
 
 step :: World -> World
 step = id -- undefined
