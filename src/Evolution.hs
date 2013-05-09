@@ -1,11 +1,7 @@
 module Evolution where
 
-import Control.Applicative ((<$), (<|>))
-import Control.Monad.State (State, state, runState)
-import Data.Functor ((<$>))
 import Data.Map as Map (Map, empty, fromList, insert, lookup)
-import Data.Maybe (fromMaybe)
-import System.Random (Random, RandomGen, StdGen, mkStdGen, randomR)
+import Evolution.Imports
 
 data World = World
              { width :: Int
@@ -52,7 +48,7 @@ initWorld :: Int -> Int -> World
 initWorld x y =
   World { width = x
         , height = y
-        , plants = empty
+        , plants = Map.empty
         , creatures = []
         }
 
