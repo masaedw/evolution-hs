@@ -6,7 +6,7 @@ import Evolution.Imports
 
 main :: IO ()
 main = do
-  let world = initWorld 20 10
+  let world = initWorld 100 30
   gen <- getStdGen
   void $ runStateT (loop world) gen
   where
