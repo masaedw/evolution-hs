@@ -52,7 +52,7 @@ initWorld x y =
         , creatures = []
         }
 
-randomRSt :: (RandomGen g, Random a) => (a, a) -> State g a
+randomRSt :: (RandomGen g, Random a, Monad m) => (a, a) -> StateT g m a
 randomRSt range = state $ randomR range
 
 -- | create plants
@@ -62,12 +62,12 @@ randomRSt range = state $ randomR range
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
-addPlants :: World -> State StdGen World
+addPlants :: (Monad m) => World -> StateT StdGen m World
 addPlants world = do
   x <- randomRSt (0, width world - 1)
   y <- randomRSt (0, height world - 1)
   let newPlants = Map.insert (x, y) Plant $ plants world
   return $ world { plants = newPlants }
 
-step :: World -> State StdGen World
+step :: (Monad m) => World -> StateT StdGen m World
 step = addPlants
