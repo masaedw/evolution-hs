@@ -16,6 +16,6 @@ main = do
       liftIO . putStr $ showWorld nw
       liftIO . putStrLn $ "--------------"
       line <- liftIO getLine
-      if ("q" `isPrefixOf` line)
+      if "q" `isPrefixOf` line
         then return nw
         else loop nw
