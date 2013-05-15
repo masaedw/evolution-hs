@@ -69,5 +69,5 @@ addPlants world = do
   let newPlants = Map.insert (x, y) Plant $ plants world
   return $ world { plants = newPlants }
 
-step :: World -> World
-step = id -- undefined
+step :: World -> State StdGen World
+step = addPlants
