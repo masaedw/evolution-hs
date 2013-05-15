@@ -66,7 +66,8 @@ addPlants :: World -> State StdGen World
 addPlants world = do
   x <- randomRSt (0, width world - 1)
   y <- randomRSt (0, height world - 1)
-  return $ world { plants = Map.insert (x, y) Plant $ plants world }
+  let newPlants = Map.insert (x, y) Plant $ plants world
+  return $ world { plants = newPlants }
 
 step :: World -> World
 step = id -- undefined
