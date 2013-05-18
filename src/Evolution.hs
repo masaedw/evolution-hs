@@ -85,9 +85,8 @@ randomPoint (s, e) = randomRSt (s, e')
 -- True
 addPlants :: (Monad m) => World -> StateT StdGen m World
 addPlants world = do
-  x <- randomRSt (0, width world - 1)
-  y <- randomRSt (0, height world - 1)
-  let newPlants = Map.insert (Point x y) Plant $ plants world
+  point <- randomPoint (Point 0 0, size world)
+  let newPlants = Map.insert point Plant $ plants world
   return $ world { plants = newPlants }
 
 step :: (Monad m) => World -> StateT StdGen m World
