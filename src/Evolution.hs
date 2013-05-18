@@ -71,6 +71,11 @@ initWorld x y =
 randomRSt :: (RandomGen g, Random a, Monad m) => (a, a) -> StateT g m a
 randomRSt range = state $ randomR range
 
+-- | get random point from [start, end) interval
+randomPoint :: (RandomGen g, Monad m) => (Point, Point) -> StateT g m Point
+randomPoint (s, e) = randomRSt (s, e')
+  where e' = Point (x e - 1) (y e - 1)
+
 -- | create plants
 --
 -- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
