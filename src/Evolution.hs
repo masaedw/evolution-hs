@@ -6,13 +6,12 @@ import Evolution.Imports
 data World = World
              { width :: Int
              , height :: Int
-             , plants :: Map (Int, Int) Plant
+             , plants :: Map Point Plant
              , creatures :: [Creature]
              }
 
 data Creature = Creature
-                { x :: Int
-                , y :: Int
+                { point :: Point
                 , gene :: Gene
                 , direction :: Direction
                 }
@@ -20,6 +19,8 @@ data Creature = Creature
 data Direction = Direction
 data Gene = Gene
 data Plant = Plant
+data Point = Point { x :: Int, y :: Int }
+           deriving (Eq, Ord, Show)
 
 -- | stringify the world
 --
@@ -34,15 +35,15 @@ showWorld :: World -> String
 showWorld world = unlines [lineString y | y <- [0..(h - 1)]]
   where
     lineString :: Int -> String
-    lineString y = [getState x y | x <- [0..(w - 1)]]
+    lineString y = [getState $ Point x y | x <- [0..(w - 1)]]
 
     w = width world
     h = height world
     creatureMap = fromList . map withIndex $ creatures world
-    withIndex c = ((x c, y c), c)
-    getState x y = fromMaybe ' ' $ ('M' <$ creature) <|> ('*' <$ plant)
-      where creature = Map.lookup (x, y) creatureMap
-            plant = Map.lookup (x, y) $ plants world
+    withIndex c = (point c, c)
+    getState point = fromMaybe ' ' $ ('M' <$ creature) <|> ('*' <$ plant)
+      where creature = Map.lookup point creatureMap
+            plant = Map.lookup point $ plants world
 
 initWorld :: Int -> Int -> World
 initWorld x y =
@@ -66,7 +67,7 @@ addPlants :: (Monad m) => World -> StateT StdGen m World
 addPlants world = do
   x <- randomRSt (0, width world - 1)
   y <- randomRSt (0, height world - 1)
-  let newPlants = Map.insert (x, y) Plant $ plants world
+  let newPlants = Map.insert (Point x y) Plant $ plants world
   return $ world { plants = newPlants }
 
 step :: (Monad m) => World -> StateT StdGen m World
