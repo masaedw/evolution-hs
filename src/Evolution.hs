@@ -4,11 +4,16 @@ import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Evolution.Imports
 
 data World = World
-             { width :: Int
-             , height :: Int
+             { size :: Point
              , plants :: Map Point Plant
              , creatures :: [Creature]
              }
+
+width :: World -> Int
+width = x . size
+
+height :: World -> Int
+height = y . size
 
 data Creature = Creature
                 { point :: Point
@@ -58,8 +63,7 @@ showWorld world = unlines [lineString y | y <- [0..(h - 1)]]
 
 initWorld :: Int -> Int -> World
 initWorld x y =
-  World { width = x
-        , height = y
+  World { size = Point x y
         , plants = Map.empty
         , creatures = []
         }
