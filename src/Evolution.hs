@@ -22,6 +22,17 @@ data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
 
+instance Random Point where
+  randomR (s, e) g =
+    let (x', g') = randomR (x s, x e) g in
+    let (y', g'') = randomR (y s, y e) g' in
+    (Point x' y', g'')
+
+  random g =
+    let (x', g') = random g in
+    let (y', g'') = random g' in
+    (Point x' y', g)
+
 -- | stringify the world
 --
 -- >>> let plants = fromList [((0::Int, 1::Int), Plant) ,((0, 2), Plant)]
