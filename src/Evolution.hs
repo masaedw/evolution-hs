@@ -8,6 +8,7 @@ data World = World
              , height :: Int
              , plants :: Map (Int, Int) Plant
              , creatures :: [Creature]
+             , jungle :: ((Int, Int), (Int, Int))
              }
 
 data Creature = Creature
@@ -26,7 +27,7 @@ data Plant = Plant
 -- >>> let plants = fromList [((0::Int, 1::Int), Plant) ,((0, 2), Plant)]
 -- >>> let creatures = [Creature 1 1 Gene Direction, Creature 1 2 Gene Direction]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
--- >>> let actual = showWorld $ World 5 5 plants creatures
+-- >>> let actual = showWorld $ World 5 5 plants creatures ((0,0), (0,0))
 -- >>> expected == actual
 -- True
 
@@ -44,12 +45,13 @@ showWorld world = unlines [lineString y | y <- [0..(h - 1)]]
       where creature = Map.lookup (x, y) creatureMap
             plant = Map.lookup (x, y) $ plants world
 
-initWorld :: Int -> Int -> World
-initWorld x y =
+initWorld :: Int -> Int -> ((Int, Int), (Int, Int)) -> World
+initWorld x y region =
   World { width = x
         , height = y
         , plants = Map.empty
         , creatures = []
+        , jungle = region
         }
 
 randomRSt :: (RandomGen g, Random a, Monad m) => (a, a) -> StateT g m a
@@ -57,17 +59,20 @@ randomRSt range = state $ randomR range
 
 -- | create plants
 --
--- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
--- >>> let expected = unlines ["   ","   ","  *"]
--- >>> let actual = showWorld $ fst x
+-- >>> let x = evalState (addPlants $ initWorld 3 3 ((1,1), (1,1))) $ mkStdGen 32
+-- >>> let expected = unlines ["   "," * ","  *"]
+-- >>> let actual = showWorld x
 -- >>> expected == actual
 -- True
 addPlants :: (Monad m) => World -> StateT StdGen m World
-addPlants world = do
-  x <- randomRSt (0, width world - 1)
-  y <- randomRSt (0, height world - 1)
-  let newPlants = Map.insert (x, y) Plant $ plants world
-  return $ world { plants = newPlants }
+addPlants world = foldM addPlant world [((0, 0), (width world - 1, height world - 1)), jungle world]
+  where
+    addPlant :: (Monad m) => World -> ((Int, Int), (Int, Int)) -> StateT StdGen m World
+    addPlant w ((left, top), (right, bottom)) = do
+      x <- randomRSt (left, right)
+      y <- randomRSt (top, bottom)
+      let newPlants = Map.insert (x, y) Plant $ plants w
+      return $ w { plants = newPlants }
 
 step :: (Monad m) => World -> StateT StdGen m World
 step = addPlants
