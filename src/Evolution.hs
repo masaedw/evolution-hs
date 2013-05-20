@@ -52,10 +52,10 @@ instance Random Point where
 
 -- | stringify the world
 --
--- >>> let plants = fromList [((0::Int, 1::Int), Plant) ,((0, 2), Plant)]
--- >>> let creatures = [Creature 1 1 Gene Direction, Creature 1 2 Gene Direction]
+-- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
+-- >>> let creatures = [Creature (Point 1 1) Gene Direction, Creature (Point 1 2) Gene Direction]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
--- >>> let actual = showWorld $ World 5 5 plants creatures
+-- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
 -- True
 
@@ -89,7 +89,7 @@ initWorld x y =
 -- True
 addPlants :: (MonadRandom m) => World -> m World
 addPlants world = do
-  points <- mapM getRandomR [area world, jungleArea world]
+  points <- mapM getRandomR $ sequence [area, jungleArea] world
   let plants' = foldr (uncurry Map.insert) (plants world) . zip points $ repeat Plant
   return $ world { plants = plants' }
 
