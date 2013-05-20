@@ -1,5 +1,6 @@
 module Evolution where
 
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
 import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Evolution.Imports
 
@@ -46,15 +47,8 @@ data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
 
 instance Random Point where
-  randomR (s, e) g =
-    let (x', g') = randomR (x s, x e) g in
-    let (y', g'') = randomR (y s, y e) g' in
-    (Point x' y', g'')
-
-  random g =
-    let (x', g') = random g in
-    let (y', g'') = random g' in
-    (Point x' y', g)
+  randomR (s, e) = runRand $ Point <$> getRandomR (x s, x e) <*> getRandomR (y s, y e)
+  random         = runRand $ Point <$> getRandom             <*> getRandom
 
 -- | stringify the world
 --
@@ -86,9 +80,6 @@ initWorld x y =
         , creatures = []
         }
 
-randomRSt :: (RandomGen g, Random a, Monad m) => (a, a) -> StateT g m a
-randomRSt range = state $ randomR range
-
 -- | create plants
 --
 -- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
@@ -96,13 +87,13 @@ randomRSt range = state $ randomR range
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
-addPlants :: (Monad m) => World -> StateT StdGen m World
+addPlants :: (MonadRandom m) => World -> m World
 addPlants world = do
-  point <- randomRSt $ area world
-  point' <- randomRSt $ jungleArea world
+  point <- getRandomR $ area world
+  point' <- getRandomR $ jungleArea world
   let plants' = Map.insert point Plant $ plants world
       plants'' = Map.insert point' Plant $ plants'
   return $ world { plants = plants'' }
 
-step :: (Monad m) => World -> StateT StdGen m World
+step :: (MonadRandom m) => World -> m World
 step = addPlants
