@@ -82,18 +82,16 @@ initWorld x y =
 
 -- | create plants
 --
--- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
+-- >>> let x = runRand (addPlants $ initWorld 3 3) $ mkStdGen 32
 -- >>> let expected = unlines ["   ","   ","  *"]
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
 addPlants :: (MonadRandom m) => World -> m World
 addPlants world = do
-  point <- getRandomR $ area world
-  point' <- getRandomR $ jungleArea world
-  let plants' = Map.insert point Plant $ plants world
-      plants'' = Map.insert point' Plant $ plants'
-  return $ world { plants = plants'' }
+  points <- mapM getRandomR [area world, jungleArea world]
+  let plants' = foldr (uncurry Map.insert) (plants world) . zip points $ repeat Plant
+  return $ world { plants = plants' }
 
 step :: (MonadRandom m) => World -> m World
 step = addPlants
