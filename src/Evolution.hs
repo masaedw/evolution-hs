@@ -1,5 +1,6 @@
 module Evolution where
 
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
 import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Evolution.Imports
 
@@ -46,22 +47,15 @@ data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
 
 instance Random Point where
-  randomR (s, e) g =
-    let (x', g') = randomR (x s, x e) g in
-    let (y', g'') = randomR (y s, y e) g' in
-    (Point x' y', g'')
-
-  random g =
-    let (x', g') = random g in
-    let (y', g'') = random g' in
-    (Point x' y', g)
+  randomR (s, e) = runRand $ Point <$> getRandomR (x s, x e) <*> getRandomR (y s, y e)
+  random         = runRand $ Point <$> getRandom             <*> getRandom
 
 -- | stringify the world
 --
--- >>> let plants = fromList [((0::Int, 1::Int), Plant) ,((0, 2), Plant)]
--- >>> let creatures = [Creature 1 1 Gene Direction, Creature 1 2 Gene Direction]
+-- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
+-- >>> let creatures = [Creature (Point 1 1) Gene Direction, Creature (Point 1 2) Gene Direction]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
--- >>> let actual = showWorld $ World 5 5 plants creatures
+-- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
 -- True
 
@@ -86,23 +80,18 @@ initWorld x y =
         , creatures = []
         }
 
-randomRSt :: (RandomGen g, Random a, Monad m) => (a, a) -> StateT g m a
-randomRSt range = state $ randomR range
-
 -- | create plants
 --
--- >>> let x = runState (addPlants $ initWorld 3 3) $ mkStdGen 32
+-- >>> let x = runRand (addPlants $ initWorld 3 3) $ mkStdGen 32
 -- >>> let expected = unlines ["   ","   ","  *"]
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
-addPlants :: (Monad m) => World -> StateT StdGen m World
+addPlants :: (MonadRandom m) => World -> m World
 addPlants world = do
-  point <- randomRSt $ area world
-  point' <- randomRSt $ jungleArea world
-  let plants' = Map.insert point Plant $ plants world
-      plants'' = Map.insert point' Plant $ plants'
-  return $ world { plants = plants'' }
+  points <- mapM getRandomR $ sequence [area, jungleArea] world
+  let plants' = foldr (uncurry Map.insert) (plants world) . zip points $ repeat Plant
+  return $ world { plants = plants' }
 
-step :: (Monad m) => World -> StateT StdGen m World
+step :: (MonadRandom m) => World -> m World
 step = addPlants
