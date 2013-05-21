@@ -24,3 +24,4 @@ executable evolution-hs
                      , mtl >= 1.1
                      , containers >= 0.4
                      , transformers >= 0.3
+                     , MonadRandom >= 0.1
