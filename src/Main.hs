@@ -18,7 +18,7 @@ main = do
     mainstep world = do
       nw <- lift $ step world
       liftIO . putStr $ showWorld nw
-      liftIO . putStrLn $ "--------------"
+      liftIO . putStrLn $ replicate (width world) '-'
       line <- liftIO getLine
       guard . not $ "q" `isPrefixOf` line
       return nw
