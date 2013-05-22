@@ -2,7 +2,8 @@ module Evolution where
 
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import qualified Control.Monad.Random as Rnd (fromList)
-import Data.Map as Map (Map, empty, fromList, insert, lookup)
+import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
+import Data.List (foldl')
 import Evolution.Imports
 
 data World = World
@@ -124,6 +125,18 @@ moveCreatures world = world { creatures = move <$> creatures world }
           Southwest -> (-1,  1)
           West      -> (-1,  0)
           Northwest -> (-1, -1)
+
+-- | animals eat plants
+--
+-- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
+-- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) (Gene []) North] }
+-- >>> showWorld . moveCreatures $ eatPlants w
+-- "   \n   \nM  \n"
+eatPlants :: World -> World
+eatPlants world = world { plants = foldl' eat (plants world) $ creatures world }
+  where
+    eat :: Plants -> Creature -> Plants
+    eat ps c = Map.delete (point c) ps
 
 -- | create plants
 --
