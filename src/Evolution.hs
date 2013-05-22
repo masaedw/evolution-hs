@@ -37,6 +37,7 @@ jungleArea w = (startPoint, endPoint)
 data Creature = Creature
                 { point :: Point
                 , gene :: Gene
+                , energy :: Int
                 , direction :: Direction
                 }
 
@@ -91,7 +92,7 @@ showWorld world = unlines $ map lineString [0..(h - 1)]
 initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
 initWorld w h = do
   gen <- initGene
-  creature <- Creature (Point cw ch) gen <$> getRandom
+  creature <- Creature (Point cw ch) gen 200 <$> getRandom
   return World { size = Point w h
                , plants = Map.empty
                , creatures = [creature]
