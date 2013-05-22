@@ -40,7 +40,13 @@ data Creature = Creature
                 , direction :: Direction
                 }
 
-data Direction = Direction
+data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
+               deriving (Eq, Ord, Show, Enum, Bounded)
+
+instance Random Direction where
+  randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
+  random = randomR (minBound, maxBound)
+
 data Gene = Gene
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
@@ -53,7 +59,7 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let creatures = [Creature (Point 1 1) Gene Direction, Creature (Point 1 2) Gene Direction]
+-- >>> let creatures = [Creature (Point 1 1) Gene minBound, Creature (Point 1 2) Gene minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
@@ -73,17 +79,38 @@ showWorld world = unlines [lineString y | y <- [0..(h - 1)]]
       where creature = Map.lookup point creatureMap
             plant = Map.lookup point $ plants world
 
-initWorld :: Int -> Int -> World
-initWorld x y =
-  World { size = Point x y
-        , plants = Map.empty
-        , creatures = []
-        }
+initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
+initWorld w h = do
+  creature <- Creature (Point cw ch) Gene <$> getRandom
+  return World { size = Point w h
+               , plants = Map.empty
+               , creatures = [creature]
+               }
+  where
+    [cw, ch] = (`div` 2) <$> [w, h]
+
+moveCreatures :: World -> World
+moveCreatures world = world { creatures = move <$> creatures world }
+  where
+    Point w h = size world
+    move c = c { point = np }
+      where
+        op = point c
+        np = Point ((x op + dx) `mod` w) ((y op + dy) `mod` h)
+        (dx, dy) = case direction c of
+          North     -> ( 0, -1)
+          Northeast -> ( 1, -1)
+          East      -> ( 1,  0)
+          Southeast -> ( 1,  1)
+          South     -> ( 0,  1)
+          Southwest -> (-1,  1)
+          West      -> (-1,  0)
+          Northwest -> (-1, -1)
 
 -- | create plants
 --
--- >>> let x = runRand (addPlants $ initWorld 3 3) $ mkStdGen 32
--- >>> let expected = unlines ["   ","   ","  *"]
+-- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
+-- >>> let expected = unlines ["   "," M ","  *"]
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
@@ -94,4 +121,4 @@ addPlants world = do
   return $ world { plants = plants' }
 
 step :: (MonadRandom m) => World -> m World
-step = addPlants
+step = return . moveCreatures >=> addPlants

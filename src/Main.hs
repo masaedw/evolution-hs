@@ -8,9 +8,8 @@ import Evolution.Imports
 
 main :: IO ()
 main = do
-  let world = initWorld 100 30
   gen <- getStdGen
-  evalRandT (loop world) gen
+  evalRandT (initWorld 100 30 >>= loop) gen
   where
     loop :: World -> RandT StdGen IO ()
     loop world = void . runMaybeT . foldM_ (flip id) world $ repeat mainstep
