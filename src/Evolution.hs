@@ -154,4 +154,5 @@ addPlants world = do
 step :: (Applicative m, MonadRandom m) => World -> m World
 step = turnCreatures
    >=> return . moveCreatures
+   >=> return . eatPlants
    >=> addPlants
