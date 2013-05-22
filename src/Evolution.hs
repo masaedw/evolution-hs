@@ -7,9 +7,11 @@ import Evolution.Imports
 
 data World = World
              { size :: Point
-             , plants :: Map Point Plant
+             , plants :: Plants
              , creatures :: [Creature]
              }
+
+type Plants = Map Point Plant
 
 width :: World -> Int
 width = x . size
