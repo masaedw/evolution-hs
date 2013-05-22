@@ -62,18 +62,18 @@ instance Random Point where
 -- True
 
 showWorld :: World -> String
-showWorld world = unlines [lineString y | y <- [0..(h - 1)]]
+showWorld world = unlines $ map lineString [0..(h - 1)]
   where
     lineString :: Int -> String
-    lineString y = [getState $ Point x y | x <- [0..(w - 1)]]
+    lineString l = map (getState . flip Point l) [0..(w - 1)]
 
     w = width world
     h = height world
     creatureMap = fromList . map withIndex $ creatures world
     withIndex c = (point c, c)
-    getState point = fromMaybe ' ' $ ('M' <$ creature) <|> ('*' <$ plant)
-      where creature = Map.lookup point creatureMap
-            plant = Map.lookup point $ plants world
+    getState pt = fromMaybe ' ' $ ('M' <$ creature) <|> ('*' <$ plant)
+      where creature = Map.lookup pt creatureMap
+            plant = Map.lookup pt $ plants world
 
 initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
 initWorld w h = do
