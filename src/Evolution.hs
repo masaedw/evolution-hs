@@ -64,7 +64,7 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let gen = Gene []
+-- >>> let gen = fst . runRand initGene $ mkStdGen 32
 -- >>> let creatures = [Creature (Point 1 1) gen minBound, Creature (Point 1 2) gen minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
