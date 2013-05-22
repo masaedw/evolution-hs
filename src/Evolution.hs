@@ -24,12 +24,8 @@ jungleArea w = (startPoint, endPoint)
   where
     jungleWidth = 10 :: Int
     jungleHeight = 10 :: Int
-
-    sx :: Int
-    sx = floor $ fromIntegral (width w - jungleWidth) / 2
-
-    sy :: Int
-    sy = floor $ fromIntegral (height w - jungleHeight) / 2
+    sx = (width w - jungleWidth) `div` 2 :: Int
+    sy = (height w - jungleHeight) `div` 2 :: Int
 
     startPoint = Point sx sy
     endPoint = Point (x startPoint + jungleWidth - 1) (y startPoint + jungleHeight - 1)
