@@ -2,6 +2,7 @@ module Evolution where
 
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import qualified Control.Monad.Random as Rnd (fromList)
+import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
 import Data.List (foldl')
 import Evolution.Imports
@@ -47,20 +48,20 @@ initCreature p = do
   Creature p gen 200 <$> getRandom
 
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
-               deriving (Eq, Ord, Show, Enum, Bounded)
+               deriving (Eq, Ord, Show, Enum, Bounded, Ix)
 
 instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-newtype Gene = Gene [Int] deriving (Eq, Ord, Show)
+type Gene = Array Direction Int
 
 initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = Gene <$> take (fromEnum (maxBound :: Direction) + 1) <$> getRandomRs (1, 10)
+initGene = listArray (minBound, maxBound) <$> getRandomRs (1, 10)
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection (Gene gen) =
-  Rnd.fromList (zip [minBound ..] $ map fromIntegral gen)
+newDirection gen =
+  Rnd.fromList (fmap fromIntegral <$> assocs gen)
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
@@ -73,8 +74,8 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let gen = fst . runRand initGene $ mkStdGen 32
--- >>> let creatures = [Creature (Point 1 1) gen minBound, Creature (Point 1 2) gen minBound]
+-- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let creatures = [Creature (Point 1 1) gen 200 minBound, Creature (Point 1 2) gen 200 minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
@@ -134,7 +135,8 @@ moveCreatures world = world { creatures = move <$> creatures world }
 -- | animals eat plants
 --
 -- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
--- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) (Gene []) North] }
+-- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 minBound] }
 -- >>> showWorld . moveCreatures $ eatPlants w
 -- "   \n   \nM  \n"
 eatPlants :: World -> World
