@@ -45,6 +45,10 @@ instance Random Direction where
   random = randomR (minBound, maxBound)
 
 newtype Gene = Gene [Int] deriving (Eq, Ord, Show)
+
+initGene :: (Functor m, MonadRandom m) => m Gene
+initGene = Gene <$> take (fromEnum (maxBound :: Direction) + 1) <$> getRandomRs (1, 10)
+
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
@@ -79,7 +83,7 @@ showWorld world = unlines $ map lineString [0..(h - 1)]
 
 initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
 initWorld w h = do
-  gen <- Gene <$> take (fromEnum (maxBound :: Direction) + 1) <$> getRandomRs (1, 10)
+  gen <- initGene
   creature <- Creature (Point cw ch) gen <$> getRandom
   return World { size = Point w h
                , plants = Map.empty
