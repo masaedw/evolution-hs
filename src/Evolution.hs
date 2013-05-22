@@ -49,6 +49,10 @@ newtype Gene = Gene [Int] deriving (Eq, Ord, Show)
 initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = Gene <$> take (fromEnum (maxBound :: Direction) + 1) <$> getRandomRs (1, 10)
 
+newDirection :: (MonadRandom m) => Gene -> m Direction
+newDirection (Gene gen) =
+  Rnd.fromList (zip [minBound ..] $ map fromIntegral gen)
+
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
@@ -98,8 +102,7 @@ turnCreatures world = do
   return world { creatures = nc }
   where
     turn c = do
-      let Gene gen = gene c
-      ndir <- Rnd.fromList (zip [minBound ..] $ map fromIntegral gen)
+      ndir <- newDirection $ gene c
       return c { direction = ndir }
 
 moveCreatures :: World -> World
