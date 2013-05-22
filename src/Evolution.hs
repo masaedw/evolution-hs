@@ -41,6 +41,11 @@ data Creature = Creature
                 , direction :: Direction
                 }
 
+initCreature :: (Functor m, MonadRandom m) => Point -> m Creature
+initCreature p = do
+  gen <- initGene
+  Creature p gen 200 <$> getRandom
+
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
                deriving (Eq, Ord, Show, Enum, Bounded)
 
@@ -91,8 +96,7 @@ showWorld world = unlines $ map lineString [0..(h - 1)]
 
 initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
 initWorld w h = do
-  gen <- initGene
-  creature <- Creature (Point cw ch) gen 200 <$> getRandom
+  creature <- initCreature (Point cw ch)
   return World { size = Point w h
                , plants = Map.empty
                , creatures = [creature]
