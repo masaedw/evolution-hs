@@ -1,6 +1,7 @@
 module Evolution where
 
-import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
+import qualified Control.Monad.Random as Rnd (fromList)
 import Data.Map as Map (Map, empty, fromList, insert, lookup)
 import Evolution.Imports
 
@@ -43,7 +44,7 @@ instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-data Gene = Gene
+newtype Gene = Gene [Int] deriving (Eq, Ord, Show)
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
            deriving (Eq, Ord, Show)
@@ -55,7 +56,8 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let creatures = [Creature (Point 1 1) Gene minBound, Creature (Point 1 2) Gene minBound]
+-- >>> let gen = Gene []
+-- >>> let creatures = [Creature (Point 1 1) gen minBound, Creature (Point 1 2) gen minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
@@ -77,13 +79,24 @@ showWorld world = unlines $ map lineString [0..(h - 1)]
 
 initWorld :: (Applicative m, MonadRandom m) => Int -> Int -> m World
 initWorld w h = do
-  creature <- Creature (Point cw ch) Gene <$> getRandom
+  gen <- Gene <$> take (fromEnum (maxBound :: Direction) + 1) <$> getRandomRs (1, 10)
+  creature <- Creature (Point cw ch) gen <$> getRandom
   return World { size = Point w h
                , plants = Map.empty
                , creatures = [creature]
                }
   where
     [cw, ch] = (`div` 2) <$> [w, h]
+
+turnCreatures :: (Applicative m, MonadRandom m) => World -> m World
+turnCreatures world = do
+  nc <- mapM turn $ creatures world
+  return world { creatures = nc }
+  where
+    turn c = do
+      let Gene gen = gene c
+      ndir <- Rnd.fromList (zip [minBound ..] $ map fromIntegral gen)
+      return c { direction = ndir }
 
 moveCreatures :: World -> World
 moveCreatures world = world { creatures = move <$> creatures world }
@@ -106,7 +119,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
 -- | create plants
 --
 -- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
--- >>> let expected = unlines ["   "," M ","  *"]
+-- >>> let expected = unlines [" * "," M ","   "]
 -- >>> let actual = showWorld $ fst x
 -- >>> expected == actual
 -- True
@@ -116,5 +129,7 @@ addPlants world = do
   let plants' = foldr (uncurry Map.insert) (plants world) . zip points $ repeat Plant
   return $ world { plants = plants' }
 
-step :: (MonadRandom m) => World -> m World
-step = return . moveCreatures >=> addPlants
+step :: (Applicative m, MonadRandom m) => World -> m World
+step = turnCreatures
+   >=> return . moveCreatures
+   >=> addPlants
