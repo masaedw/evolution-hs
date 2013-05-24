@@ -26,6 +26,7 @@ executable evolution-hs
                      , containers >= 0.4
                      , transformers >= 0.3
                      , MonadRandom >= 0.1
+                     , array >= 0.4
 
 test-suite doctest
   type:                exitcode-stdio-1.0
