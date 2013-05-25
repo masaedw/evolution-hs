@@ -119,8 +119,9 @@ moveCreatures :: World -> World
 moveCreatures world = world { creatures = move <$> creatures world }
   where
     Point w h = size world
-    move c = c { point = np }
+    move c = c { point = np, energy = ne }
       where
+        ne = energy c - 1
         op = point c
         np = Point ((x op + dx) `mod` w) ((y op + dy) `mod` h)
         (dx, dy) = case direction c of
@@ -141,7 +142,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
 -- >>> showWorld nw
 -- "   \n   \nM  \n"
 -- >>> energy . head $ creatures nw
--- 280
+-- 279
 eatPlants :: World -> World
 eatPlants world =
   let (np, nc) = mapAccumL eat (plants world) $ creatures world in
