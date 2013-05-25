@@ -151,7 +151,7 @@ eatPlants world =
     eat :: Plants -> Creature -> (Plants, Creature)
     eat ps c =
       case Map.lookup pc ps of
-        Just p -> (Map.delete pc ps, c { energy = energy c + 80 })
+        Just _ -> (Map.delete pc ps, c { energy = energy c + 80 })
         Nothing -> (ps, c)
       where pc = point c
 
