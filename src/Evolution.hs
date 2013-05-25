@@ -2,9 +2,9 @@ module Evolution where
 
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import qualified Control.Monad.Random as Rnd (fromList)
-import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
+import Data.Array.IArray as Arr (Array, Ix, accum, assocs, listArray)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
-import Data.List (foldl')
+import Data.List (mapAccumL)
 import Evolution.Imports
 
 data World = World
@@ -118,7 +118,7 @@ moveCreatures :: World -> World
 moveCreatures world = world { creatures = move <$> creatures world }
   where
     Point w h = size world
-    move c = c { point = np }
+    move c = c { point = np, energy = energy c - 1 }
       where
         op = point c
         np = Point ((x op + dx) `mod` w) ((y op + dy) `mod` h)
@@ -132,18 +132,47 @@ moveCreatures world = world { creatures = move <$> creatures world }
           West      -> (-1,  0)
           Northwest -> (-1, -1)
 
+removeCorpses :: World -> World
+removeCorpses world = world { creatures = filter isAlive $ creatures world }
+  where
+    isAlive Creature { energy = e } = 0 < e
+
 -- | animals eat plants
 --
 -- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
 -- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
--- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 minBound] }
+-- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 North] }
 -- >>> showWorld . moveCreatures $ eatPlants w
 -- "   \n   \nM  \n"
 eatPlants :: World -> World
-eatPlants world = world { plants = foldl' eat (plants world) $ creatures world }
+eatPlants world = world { plants = nplants, creatures = ncreatures }
   where
-    eat :: Plants -> Creature -> Plants
-    eat ps c = Map.delete (point c) ps
+    (nplants, ncreatures) = mapAccumL eat (plants world) $ creatures world
+
+    eat :: Plants -> Creature -> (Plants, Creature)
+    eat ps c = (Map.delete (point c) ps, c { energy = energy c + fromMaybe 0 (80 <$ Map.lookup (point c) ps) })
+
+mutate :: (MonadRandom m) => Gene -> m Gene
+mutate gen = do
+  i <- getRandom
+  d <- getRandomR (-1, 1)
+  return $ accum f gen [(i, d)]
+  where
+    f a b = maximum [1, a + b]
+
+reproduceCreatures :: (Applicative m, MonadRandom m) => World -> m World
+reproduceCreatures world = do
+  ncreatures <- foldM reproduce [] . reverse $ creatures world
+  return world { creatures = ncreatures }
+  where
+    reproduce acc c@(Creature { energy = e })
+      | e < 200 = return $ c:acc
+      | otherwise = (:parent:acc) <$> child
+      where
+        parent = c { energy = e `div` 2 }
+        child = do
+          newgene <- mutate $ gene parent
+          return parent { gene = newgene }
 
 -- | create plants
 --
@@ -156,10 +185,12 @@ addPlants :: (MonadRandom m) => World -> m World
 addPlants world = do
   points <- mapM getRandomR $ sequence [area, jungleArea] world
   let plants' = foldr (uncurry Map.insert) (plants world) . zip points $ repeat Plant
-  return $ world { plants = plants' }
+  return world { plants = plants' }
 
 step :: (Applicative m, MonadRandom m) => World -> m World
-step = turnCreatures
+step = return . removeCorpses
+   >=> turnCreatures
    >=> return . moveCreatures
    >=> return . eatPlants
+   >=> reproduceCreatures
    >=> addPlants
