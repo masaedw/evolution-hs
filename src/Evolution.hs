@@ -4,7 +4,7 @@ import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, ru
 import qualified Control.Monad.Random as Rnd (fromList)
 import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
-import Data.List (foldl')
+import Data.List (mapAccumL)
 import Evolution.Imports
 
 data World = World
@@ -41,6 +41,7 @@ data Creature = Creature
                 , energy :: Int
                 , direction :: Direction
                 }
+              deriving (Show)
 
 initCreature :: (Functor m, MonadRandom m) => Point -> m Creature
 initCreature p = do
@@ -134,16 +135,24 @@ moveCreatures world = world { creatures = move <$> creatures world }
 
 -- | animals eat plants
 --
--- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
 -- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
--- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 minBound] }
--- >>> showWorld . moveCreatures $ eatPlants w
+-- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 North] }
+-- >>> let nw = moveCreatures $ eatPlants w
+-- >>> showWorld nw
 -- "   \n   \nM  \n"
+-- >>> energy . head $ creatures nw
+-- 280
 eatPlants :: World -> World
-eatPlants world = world { plants = foldl' eat (plants world) $ creatures world }
+eatPlants world =
+  let (np, nc) = mapAccumL eat (plants world) $ creatures world in
+  world { plants = np, creatures = nc }
   where
-    eat :: Plants -> Creature -> Plants
-    eat ps c = Map.delete (point c) ps
+    eat :: Plants -> Creature -> (Plants, Creature)
+    eat ps c =
+      case Map.lookup pc ps of
+        Just p -> (Map.delete pc ps, c { energy = energy c + 80 })
+        Nothing -> (ps, c)
+      where pc = point c
 
 -- | create plants
 --
