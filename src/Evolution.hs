@@ -115,6 +115,11 @@ turnCreatures world = do
       ndir <- newDirection $ gene c
       return c { direction = ndir }
 
+removeDeadCreatures :: World -> World
+removeDeadCreatures world = world { creatures = nc }
+  where
+    nc = filter ((> 0) . energy) $ creatures world
+
 moveCreatures :: World -> World
 moveCreatures world = world { creatures = move <$> creatures world }
   where
@@ -170,6 +175,7 @@ addPlants world = do
 
 step :: (Applicative m, MonadRandom m) => World -> m World
 step = turnCreatures
+   >=> return . removeDeadCreatures
    >=> return . moveCreatures
    >=> return . eatPlants
    >=> addPlants
