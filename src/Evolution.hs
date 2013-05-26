@@ -3,8 +3,9 @@ module Evolution where
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import qualified Control.Monad.Random as Rnd (fromList)
 import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
-import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
 import Data.List (mapAccumL)
+import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
+import qualified Data.Traversable as Trav (mapM)
 import Evolution.Imports
 
 data World = World
@@ -59,6 +60,11 @@ type Gene = Array Direction Int
 
 initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = listArray (minBound, maxBound) <$> getRandomRs (1, 10)
+
+mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
+mutateGene g = Trav.mapM f g
+  where
+    f i = (i +) <$> getRandomR (-1, 1)
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
 newDirection gen =
@@ -160,6 +166,23 @@ eatPlants world =
         Nothing -> (ps, c)
       where pc = point c
 
+
+devide :: (Functor m, MonadRandom m) => Creature -> m [Creature]
+devide c =
+  if energy c < 200
+  then return [c]
+  else do
+    gen <- mutateGene $ gene c
+    return [c { energy = energy c `div` 2 }, c { energy = energy c `div` 2, gene = gen }]
+
+reproduceCreatures :: (Functor m, MonadRandom m) => World -> m World
+reproduceCreatures world = do
+  nc <- devideCreatures $ creatures world
+  return $ world { creatures = nc }
+    where
+      devideCreatures :: (Functor m, MonadRandom m) => [Creature] -> m [Creature]
+      devideCreatures = liftM concat . mapM devide
+
 -- | create plants
 --
 -- >>> let x = runRand (initWorld 3 3 >>= addPlants) $ mkStdGen 32
@@ -178,4 +201,5 @@ step = turnCreatures
    >=> return . removeDeadCreatures
    >=> return . moveCreatures
    >=> return . eatPlants
+   >=> reproduceCreatures
    >=> addPlants
