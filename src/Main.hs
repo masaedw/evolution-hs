@@ -11,10 +11,10 @@ main = do
   gen <- getStdGen
   evalRandT (initWorld 100 30 >>= loop) gen
 
-loop :: World -> RandT StdGen IO ()
+loop :: (RandomGen g) => World -> RandT g IO ()
 loop world = void . runMaybeT . (flip evalStateT) 1 . foldM_ (flip id) world $ repeat mainstep
 
-mainstep :: World -> StateT Int (MaybeT (RandT StdGen IO)) World
+mainstep :: (RandomGen g) => World -> StateT Int (MaybeT (RandT g IO)) World
 mainstep world = do
   n <- get
   nw <- lift . lift $ nstep n world
