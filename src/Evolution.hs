@@ -177,11 +177,8 @@ devide c =
 
 reproduceCreatures :: (Functor m, MonadRandom m) => World -> m World
 reproduceCreatures world = do
-  nc <- devideCreatures $ creatures world
+  nc <- liftM concat . mapM devide $ creatures world
   return $ world { creatures = nc }
-    where
-      devideCreatures :: (Functor m, MonadRandom m) => [Creature] -> m [Creature]
-      devideCreatures = liftM concat . mapM devide
 
 -- | create plants
 --
