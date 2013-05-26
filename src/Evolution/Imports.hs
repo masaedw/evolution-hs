@@ -1,6 +1,7 @@
 module Evolution.Imports (
   module Control.Applicative,
   module Control.Monad.State,
+  module Data.Functor,
   module Data.Maybe,
   module System.Random,
   ) where
