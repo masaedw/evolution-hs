@@ -1,11 +1,11 @@
 module Evolution where
 
+import Control.Arrow (second)
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import qualified Control.Monad.Random as Rnd (fromList)
 import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
 import Data.List (mapAccumL)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
-import qualified Data.Traversable as Trav (mapM)
 import Evolution.Imports
 
 data World = World
@@ -56,19 +56,39 @@ instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-type Gene = Array Direction Int
+type Gene = [(Direction, Double)]
 
 initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = listArray (minBound, maxBound) <$> getRandomRs (1, 10)
+initGene = do
+  rs <- getRandomRs (1::Int, 10::Int)
+  return . zip [(minBound::Direction)..] $ (fromIntegral <$> rs)
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene = Trav.mapM f
-  where
-    f i = (i +) <$> getRandomR (-1, 1)
+mutateGene g = forM g $ \(d, x) -> do
+  r <- getRandomR (-1::Int, 1::Int)
+  return $ (d, x + fromIntegral r)
+
+
+ranr :: (Random a, MonadRandom m) => (a, a) -> m a
+ranr = getRandomR
+
+
+-- | Sample a random value from a weighted list.  The total weight of all
+-- elements must not be 0.
+fromListX :: (MonadRandom m) => [(a,Double)] -> m a
+fromListX [] = error "MonadRandom.fromList called with empty list"
+fromListX [(x,_)] = return x
+fromListX xs = do
+  -- TODO: Do we want to be able to use floats as weights?
+  -- TODO: Better error message if weights sum to 0.
+  let s = sum (map snd xs)  -- total weight
+      cs = scanl1 (\(_,q) (y,s') -> (y, s'+q)) xs       -- cumulative weight
+  p <- ranr (0.0, s)
+  let d = dropWhile (\(_,q) -> q < p) cs
+  return . fst . head $ d
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection gen =
-  Rnd.fromList (fmap fromIntegral <$> assocs gen)
+newDirection = fromListX
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
