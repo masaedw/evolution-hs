@@ -62,7 +62,7 @@ initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = listArray (minBound, maxBound) <$> getRandomRs (1, 10)
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene g = Trav.mapM f g
+mutateGene = Trav.mapM f
   where
     f i = (i +) <$> getRandomR (-1, 1)
 
