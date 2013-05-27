@@ -62,9 +62,9 @@ initGene = do
   return $ zip [(minBound::Direction)..] rs
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene g = forM g $ \(d, x) -> do
+mutateGene g = forM g $ \(d, i) -> do
   r <- getRandomR (-1, 1)
-  return $ (d, x + r)
+  return $ (d, i + r)
 
 randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
 randomFromList list = do
