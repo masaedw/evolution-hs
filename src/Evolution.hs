@@ -1,9 +1,9 @@
 module Evolution where
 
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
+import Data.Foldable (foldrM)
 import Data.List (mapAccumL)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
-import qualified Data.Traversable as Trav (mapM)
 import Evolution.Imports
 
 data World = World
@@ -174,17 +174,17 @@ eatPlants world =
       where pc = point c
 
 
-devide :: (Functor m, MonadRandom m) => Creature -> m [Creature]
-devide c =
+devide :: (Functor m, MonadRandom m) => Creature -> [Creature] -> m [Creature]
+devide c cx =
   if energy c < 200
-  then return [c]
+  then return $ c:cx
   else do
     gen <- mutateGene $ gene c
-    return [c { energy = energy c `div` 2 }, c { energy = energy c `div` 2, gene = gen }]
+    return $ c { energy = energy c `div` 2 } : c { energy = energy c `div` 2, gene = gen } : cx
 
 reproduceCreatures :: (Functor m, MonadRandom m) => World -> m World
 reproduceCreatures world = do
-  nc <- liftM concat . mapM devide $ creatures world
+  nc <- foldrM devide [] $ creatures world
   return $ world { creatures = nc }
 
 -- | create plants
