@@ -56,26 +56,24 @@ instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-type Gene = [(Direction, Double)]
+type Gene = [(Direction, Int)]
 
 initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = do
-  rs <- getRandomRs (1::Int, 10::Int)
-  return . zip [(minBound::Direction)..] $ (fromIntegral <$> rs)
+  rs <- getRandomRs (1, 10)
+  return . zip [(minBound::Direction)..] $ rs
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
 mutateGene g = forM g $ \(d, x) -> do
-  r <- getRandomR (-1::Int, 1::Int)
-  return $ (d, x + fromIntegral r)
-
+  r <- getRandomR (-1, 1)
+  return $ (d, x + r)
 
 ranr :: (Random a, MonadRandom m) => (a, a) -> m a
 ranr = getRandomR
 
-
 -- | Sample a random value from a weighted list.  The total weight of all
 -- elements must not be 0.
-fromListX :: (MonadRandom m) => [(a,Double)] -> m a
+fromListX :: (MonadRandom m) => [(a,Int)] -> m a
 fromListX [] = error "MonadRandom.fromList called with empty list"
 fromListX [(x,_)] = return x
 fromListX xs = do
@@ -83,12 +81,20 @@ fromListX xs = do
   -- TODO: Better error message if weights sum to 0.
   let s = sum (map snd xs)  -- total weight
       cs = scanl1 (\(_,q) (y,s') -> (y, s'+q)) xs       -- cumulative weight
-  p <- ranr (0.0, s)
+  p <- ranr (0, s)
   let d = dropWhile (\(_,q) -> q < p) cs
   return . fst . head $ d
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
 newDirection = fromListX
+
+newDirection' :: (MonadRandom m) => Gene -> m Direction
+newDirection' gen = do
+  r <- getRandomR (0, mx)
+  return . fst . head . dropWhile ((< r) . snd) $ xs
+  where
+    xs = scanl1 (second . (+) . snd) gen
+    mx = snd . head . reverse $ xs
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
