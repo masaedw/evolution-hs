@@ -1,6 +1,5 @@
 module Evolution where
 
-import Control.Arrow (second)
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
 import Data.List (mapAccumL)
@@ -69,9 +68,9 @@ mutateGene = Trav.mapM f
 newDirection :: (MonadRandom m) => Gene -> m Direction
 newDirection gen = do
   r <- getRandomR (1, mx)
-  return . fst . head . dropWhile ((< r) . snd) $ xs
+  return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
   where
-    xs = scanl1 (second . (+) . snd) (assocs gen)
+    xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) (assocs gen)
     mx = snd . head . reverse $ xs
 
 data Plant = Plant
