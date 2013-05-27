@@ -32,5 +32,4 @@ parseInt s =
       ((i,_):_) -> Just i
 
 nstep :: (Applicative m, MonadRandom m) => Int -> World -> m World
-nstep 1 w = step w
-nstep n w = step w >>= nstep (n - 1)
+nstep n w = foldM (flip id) w $ replicate n step
