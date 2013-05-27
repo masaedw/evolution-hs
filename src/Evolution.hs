@@ -65,13 +65,16 @@ mutateGene = Trav.mapM f
   where
     f i = (i +) <$> getRandomR (-1, 1)
 
-newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection gen = do
+randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
+randomFromList list = do
   r <- getRandomR (1, mx)
   return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
   where
-    xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) (assocs gen)
+    xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) list
     mx = snd . head . reverse $ xs
+
+newDirection :: (MonadRandom m) => Gene -> m Direction
+newDirection gen = randomFromList $ assocs gen
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
