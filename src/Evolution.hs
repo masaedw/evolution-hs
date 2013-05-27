@@ -72,7 +72,7 @@ randomFromList list = do
   return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
   where
     xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) list
-    mx = snd . head . reverse $ xs
+    mx = foldl (\a (_, r) -> a + r) 0 list
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
 newDirection gen = randomFromList gen
