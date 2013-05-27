@@ -1,7 +1,6 @@
 module Evolution where
 
 import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
-import Data.Array.IArray as Arr (Array, Ix, assocs, listArray)
 import Data.List (mapAccumL)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
 import qualified Data.Traversable as Trav (mapM)
@@ -49,21 +48,23 @@ initCreature p = do
   Creature p gen 200 <$> getRandom
 
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
-               deriving (Eq, Ord, Show, Enum, Bounded, Ix)
+               deriving (Eq, Ord, Show, Enum, Bounded)
 
 instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-type Gene = Array Direction Int
+type Gene = [(Direction, Int)]
 
 initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = listArray (minBound, maxBound) <$> getRandomRs (1, 10)
+initGene = do
+  rs <- getRandomRs (1::Int, 10::Int)
+  return $ zip [(minBound::Direction)..] rs
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene = Trav.mapM f
-  where
-    f i = (i +) <$> getRandomR (-1, 1)
+mutateGene g = forM g $ \(d, x) -> do
+  r <- getRandomR (-1, 1)
+  return $ (d, x + r)
 
 randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
 randomFromList list = do
@@ -74,7 +75,7 @@ randomFromList list = do
     mx = snd . head . reverse $ xs
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection gen = randomFromList $ assocs gen
+newDirection gen = randomFromList gen
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
