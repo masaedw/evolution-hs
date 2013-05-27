@@ -68,7 +68,7 @@ mutateGene = Trav.mapM f
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
 newDirection gen = do
-  r <- getRandomR (0, mx)
+  r <- getRandomR (1, mx)
   return . fst . head . dropWhile ((< r) . snd) $ xs
   where
     xs = scanl1 (second . (+) . snd) (assocs gen)
