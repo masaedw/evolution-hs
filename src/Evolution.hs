@@ -88,7 +88,7 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
 -- >>> let creatures = [Creature (Point 1 1) gen 200 minBound, Creature (Point 1 2) gen 200 minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
@@ -154,7 +154,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
 
 -- | animals eat plants
 --
--- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
 -- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 North] }
 -- >>> let nw = moveCreatures $ eatPlants w
 -- >>> showWorld nw
