@@ -62,7 +62,7 @@ initGene = zip [minBound ..] <$> getRandomRs (1, 10)
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
 mutateGene g = forM g $ \(d, i) -> do
   r <- getRandomR (-1, 1)
-  return $ (d, i + r)
+  return (d, i + r)
 
 randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
 randomFromList list = do
@@ -73,7 +73,7 @@ randomFromList list = do
     mx = foldl (\a (_, r) -> a + r) 0 list
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection gen = randomFromList gen
+newDirection = randomFromList
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }

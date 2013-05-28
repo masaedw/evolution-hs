@@ -12,7 +12,7 @@ main = do
   evalRandT (initWorld 100 30 >>= loop) gen
 
 loop :: (RandomGen g) => World -> RandT g IO ()
-loop world = void . runMaybeT . (flip evalStateT) 1 . foldM_ (flip id) world $ repeat mainstep
+loop world = void . runMaybeT . flip evalStateT 1 . foldM_ (flip id) world $ repeat mainstep
 
 mainstep :: (RandomGen g) => World -> StateT Int (MaybeT (RandT g IO)) World
 mainstep world = do
