@@ -12,18 +12,17 @@ main = do
   evalRandT (initWorld 100 30 >>= loop) gen
 
 loop :: (RandomGen g) => World -> RandT g IO ()
-loop world = void . runMaybeT . (flip evalStateT) 1 . foldM_ (flip id) world $ repeat mainstep
+loop world = void . runMaybeT . foldM_ (flip id) (1, world) $ repeat mainstep
 
-mainstep :: (RandomGen g) => World -> StateT Int (MaybeT (RandT g IO)) World
-mainstep world = do
-  n <- get
-  nw <- lift . lift $ nstep n world
+mainstep :: (RandomGen g) => (Int, World) -> MaybeT (RandT g IO) (Int, World)
+mainstep (n, world) = do
+  nw <- lift $ nstep n world
   liftIO . putStr $ showWorld nw
   liftIO . putStrLn $ replicate (width world) '-'
   line <- liftIO getLine
-  put . fromMaybe n $ parseInt line
+  let nn = fromMaybe n $ parseInt line
   guard . not $ "q" `isPrefixOf` line
-  return nw
+  return (nn, nw)
 
 parseInt :: String -> Maybe Int
 parseInt s =
@@ -32,5 +31,4 @@ parseInt s =
       ((i,_):_) -> Just i
 
 nstep :: (Applicative m, MonadRandom m) => Int -> World -> m World
-nstep 1 w = step w
-nstep n w = step w >>= nstep (n - 1)
+nstep n w = foldM (flip id) w $ replicate n step
