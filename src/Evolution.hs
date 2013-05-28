@@ -26,10 +26,10 @@ area w = (Point 0 0, Point (width w - 1) (height w - 1))
 jungleArea :: World -> (Point, Point)
 jungleArea w = (startPoint, endPoint)
   where
-    jungleWidth = 10 :: Int
-    jungleHeight = 10 :: Int
-    sx = (width w - jungleWidth) `div` 2 :: Int
-    sy = (height w - jungleHeight) `div` 2 :: Int
+    jungleWidth = 10
+    jungleHeight = 10
+    sx = (width w - jungleWidth) `div` 2
+    sy = (height w - jungleHeight) `div` 2
 
     startPoint = Point sx sy
     endPoint = Point (x startPoint + jungleWidth - 1) (y startPoint + jungleHeight - 1)
@@ -57,14 +57,12 @@ instance Random Direction where
 type Gene = [(Direction, Int)]
 
 initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = do
-  rs <- getRandomRs (1::Int, 10::Int)
-  return $ zip [(minBound::Direction)..] rs
+initGene = zip [minBound ..] <$> getRandomRs (1, 10)
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
 mutateGene g = forM g $ \(d, i) -> do
   r <- getRandomR (-1, 1)
-  return $ (d, i + r)
+  return (d, max 1 $ i + r)
 
 randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
 randomFromList list = do
@@ -75,7 +73,7 @@ randomFromList list = do
     mx = foldl (\a (_, r) -> a + r) 0 list
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection gen = randomFromList gen
+newDirection = randomFromList
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
@@ -88,7 +86,7 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
 -- >>> let creatures = [Creature (Point 1 1) gen 200 minBound, Creature (Point 1 2) gen 200 minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
@@ -154,7 +152,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
 
 -- | animals eat plants
 --
--- >>> let gen = listArray (minBound, maxBound) (repeat 1) :: Gene
+-- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
 -- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 North] }
 -- >>> let nw = moveCreatures $ eatPlants w
 -- >>> showWorld nw
@@ -175,12 +173,11 @@ eatPlants world =
 
 
 devide :: (Functor m, MonadRandom m) => Creature -> [Creature] -> m [Creature]
-devide c cx =
-  if energy c < 200
-  then return $ c:cx
-  else do
-    gen <- mutateGene $ gene c
-    return $ c { energy = energy c `div` 2 } : c { energy = energy c `div` 2, gene = gen } : cx
+devide c@Creature { energy = en } cx
+  | en < 200 = return (c:cx)
+  | otherwise = do
+      gen <- mutateGene $ gene c
+      return $ c { energy = en `div` 2 } : c { energy = en `div` 2, gene = gen } : cx
 
 reproduceCreatures :: (Functor m, MonadRandom m) => World -> m World
 reproduceCreatures world = do
