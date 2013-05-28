@@ -16,7 +16,7 @@ loop world = void . runMaybeT . foldM_ (flip id) (1, world) $ repeat mainstep
 
 mainstep :: (RandomGen g) => (Int, World) -> MaybeT (RandT g IO) (Int, World)
 mainstep (n, world) = do
-  nw <- nstep n world
+  nw <- lift $ nstep n world
   liftIO . putStr $ showWorld nw
   liftIO . putStrLn $ replicate (width world) '-'
   line <- liftIO getLine
