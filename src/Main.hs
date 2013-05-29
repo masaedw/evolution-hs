@@ -7,14 +7,12 @@ import Evolution
 import Evolution.Imports
 
 main :: IO ()
-main = do
-  gen <- getStdGen
-  evalRandT (initWorld 100 30 >>= loop) gen
+main = initWorld 100 30 >>= loop
 
-loop :: (RandomGen g) => World -> RandT g IO ()
+loop :: World -> IO ()
 loop world = void . runMaybeT . foldM_ (flip id) (1, world) $ repeat mainstep
 
-mainstep :: (RandomGen g) => (Int, World) -> MaybeT (RandT g IO) (Int, World)
+mainstep :: (Int, World) -> MaybeT IO (Int, World)
 mainstep (n, world) = do
   nw <- lift $ nstep n world
   liftIO . putStr $ showWorld nw
