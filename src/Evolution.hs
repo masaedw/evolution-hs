@@ -60,9 +60,12 @@ initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = zip [minBound ..] <$> getRandomRs (1, 10)
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene g = forM g $ \(d, i) -> do
+mutateGene g = do
+  i <- getRandom
   r <- getRandomR (-1, 1)
-  return (d, max 1 $ i + r)
+  let f (d, v) | d == i && 1 <= v + r = (d, v + r)
+      f a = a
+  return $ map f g
 
 randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
 randomFromList list = do
