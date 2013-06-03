@@ -1,9 +1,10 @@
 module Evolution where
 
-import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
 import Data.Foldable (foldrM)
 import Data.List (mapAccumL)
 import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
+import Evolution.Gene (Direction, Gene, delta, initGene, mutateGene, newDirection)
 import Evolution.Imports
 
 data World = World
@@ -46,37 +47,6 @@ initCreature :: (Functor m, MonadRandom m) => Point -> m Creature
 initCreature p = do
   gen <- initGene
   Creature p gen 200 <$> getRandom
-
-data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
-               deriving (Eq, Ord, Show, Enum, Bounded)
-
-instance Random Direction where
-  randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
-  random = randomR (minBound, maxBound)
-
-type Gene = [(Direction, Int)]
-
-initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = zip [minBound ..] <$> getRandomRs (1, 10)
-
-mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene g = do
-  i <- getRandom
-  r <- getRandomR (-1, 1)
-  let f (d, v) | d == i && 1 <= v + r = (d, v + r)
-      f a = a
-  return $ map f g
-
-randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
-randomFromList list = do
-  r <- getRandomR (1, mx)
-  return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
-  where
-    xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) list
-    mx = foldl (\a (_, r) -> a + r) 0 list
-
-newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection = randomFromList
 
 data Plant = Plant
 data Point = Point { x :: Int, y :: Int }
@@ -143,15 +113,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
         ne = energy c - 1
         op = point c
         np = Point ((x op + dx) `mod` w) ((y op + dy) `mod` h)
-        (dx, dy) = case direction c of
-          North     -> ( 0, -1)
-          Northeast -> ( 1, -1)
-          East      -> ( 1,  0)
-          Southeast -> ( 1,  1)
-          South     -> ( 0,  1)
-          Southwest -> (-1,  1)
-          West      -> (-1,  0)
-          Northwest -> (-1, -1)
+        (dx, dy) = delta $ direction c
 
 -- | animals eat plants
 --
