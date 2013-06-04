@@ -7,7 +7,7 @@ module Evolution.Gene
   , newDirection
   ) where
 
-import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
 import Evolution.Imports
 
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
@@ -17,29 +17,37 @@ instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-type Gene = [(Direction, Int)]
+data Gene = Gene Int [(Direction, Int)] deriving (Show)
 
 initGene :: (Functor m, MonadRandom m) => m Gene
-initGene = zip [minBound ..] <$> getRandomRs (1, 10)
+initGene = do
+  list <- replicateM dircount $ getRandomR (1, 10)
+  let mx = sum list
+      xs = scanl1 (+) list
+  return . Gene mx $ zip [minBound ..] xs
+  where
+    dircount = fromEnum (maxBound :: Direction) - fromEnum (minBound :: Direction) + 1
 
 mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
-mutateGene g = do
-  i <- getRandom
+mutateGene a@(Gene _ g) = do
   r <- getRandomR (-1, 1)
-  let f (d, v) | d == i && 1 <= v + r = (d, v + r)
-      f a = a
-  return $ map f g
+  if r == 0 then return a
+  else do
+    i <- getRandom
+    let f (d, v) | d == i && 1 <= v + r = (d, v + r)
+        f x = x
+        ps = map f $ zipWith (\(d, v) w -> (d, v - w)) g (0:map snd g)
+        xs = scanl1 (\(_, v) (k, w) -> (k, v + w)) ps
+        mx = sum . map snd $ ps
+    return $ Gene mx xs
 
-randomFromList :: (MonadRandom m) => [(a, Int)] -> m a
-randomFromList list = do
+randomFromList :: (MonadRandom m) => Int -> [(a, Int)] -> m a
+randomFromList mx xs = do
   r <- getRandomR (1, mx)
   return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
-  where
-    xs = scanl1 (\(_, a) (k, v) -> (k, a + v)) list
-    mx = foldl (\a (_, r) -> a + r) 0 list
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection = randomFromList
+newDirection (Gene mx xs) = randomFromList mx xs
 
 delta :: Direction -> (Int, Int)
 delta North     = ( 0, -1)
