@@ -7,47 +7,47 @@ module Evolution.Gene
   , newDirection
   ) where
 
-import Control.Monad.Random (MonadRandom, getRandom, getRandomR, runRand)
+import Control.Monad.Random (MonadRandom, getRandom, getRandomR, getRandomRs, runRand)
 import Evolution.Imports
 
 data Direction = North | Northeast | East | Southeast | South | Southwest | West | Northwest
                deriving (Eq, Ord, Show, Enum, Bounded)
 
+minDir :: Direction
+minDir = minBound
+
 instance Random Direction where
   randomR (s, e) = runRand $ toEnum <$> getRandomR (fromEnum s, fromEnum e)
   random = randomR (minBound, maxBound)
 
-data Gene = Gene Int [(Direction, Int)] deriving (Show)
+data Gene = Gene Int [Int] deriving (Show)
+
+makeGene :: [Int] -> Gene
+makeGene list = Gene mx xs
+  where
+    mx = sum list
+    xs = scanl1 (+) list
 
 initGene :: (Functor m, MonadRandom m) => m Gene
 initGene = do
-  list <- replicateM dircount $ getRandomR (1, 10)
-  let mx = sum list
-      xs = scanl1 (+) list
-  return . Gene mx $ zip [minBound ..] xs
-  where
-    dircount = fromEnum (maxBound :: Direction) - fromEnum (minBound :: Direction) + 1
+  list <- zipWith (flip const) [minDir ..] <$> getRandomRs (1, 10)
+  return $ makeGene list
 
-mutateGene :: (Functor m, MonadRandom m) => Gene -> m Gene
+mutateGene :: (MonadRandom m) => Gene -> m Gene
 mutateGene a@(Gene _ g) = do
   r <- getRandomR (-1, 1)
   if r == 0 then return a
   else do
     i <- getRandom
-    let f (d, v) | d == i && 1 <= v + r = (d, v + r)
-        f x = x
-        ps = map f $ zipWith (\(d, v) w -> (d, v - w)) g (0:map snd g)
-        xs = scanl1 (\(_, v) (k, w) -> (k, v + w)) ps
-        mx = sum . map snd $ ps
-    return $ Gene mx xs
-
-randomFromList :: (MonadRandom m) => Int -> [(a, Int)] -> m a
-randomFromList mx xs = do
-  r <- getRandomR (1, mx)
-  return . fst . head . dropWhile (\(_, v) -> v < r) $ xs
+    let f d v | d == i && 1 <= v + r = v + r
+        f _ v = v
+        ps = zipWith f [minDir ..] $ zipWith (-) g (0:g)
+    return $ makeGene ps
 
 newDirection :: (MonadRandom m) => Gene -> m Direction
-newDirection (Gene mx xs) = randomFromList mx xs
+newDirection (Gene mx xs) = do
+  r <- getRandomR (1, mx)
+  return . toEnum . length . takeWhile (< r) $ xs
 
 delta :: Direction -> (Int, Int)
 delta North     = ( 0, -1)
