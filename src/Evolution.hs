@@ -7,6 +7,9 @@ import Data.Map as Map (Map, delete, empty, fromList, insert, lookup)
 import Evolution.Gene (Direction, Gene, delta, initGene, mutateGene, newDirection)
 import Evolution.Imports
 
+-- $setup
+-- >>> let testGene = fst . runRand initGene $ mkStdGen 37
+
 data World = World
              { size :: Point
              , plants :: Plants
@@ -59,8 +62,7 @@ instance Random Point where
 -- | stringify the world
 --
 -- >>> let plants = fromList [(Point 0 1, Plant), (Point 0 2, Plant)]
--- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
--- >>> let creatures = [Creature (Point 1 1) gen 200 minBound, Creature (Point 1 2) gen 200 minBound]
+-- >>> let creatures = [Creature (Point 1 1) testGene 200 minBound, Creature (Point 1 2) testGene 200 minBound]
 -- >>> let expected = unlines ["     ","*M   ","*M   ","     ","     "]
 -- >>> let actual = showWorld $ World (Point 5 5) plants creatures
 -- >>> expected == actual
@@ -117,8 +119,7 @@ moveCreatures world = world { creatures = move <$> creatures world }
 
 -- | animals eat plants
 --
--- >>> let gen = zip [minBound ..] (repeat 1) :: Gene
--- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) gen 200 North] }
+-- >>> let w = World { size = Point 3 3, plants = Map.fromList [(Point 0 0, Plant)], creatures = [Creature (Point 0 0) testGene 200 minBound] }
 -- >>> let nw = moveCreatures $ eatPlants w
 -- >>> showWorld nw
 -- "   \n   \nM  \n"
