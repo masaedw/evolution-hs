@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Control.Monad.Random (MonadRandom, RandT, evalRandT)
+import Control.Monad.Random (MonadRandom)
 import Control.Monad.Trans.Maybe
 import Data.List
 import Evolution
